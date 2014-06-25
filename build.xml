@@ -4,6 +4,7 @@
 	<property name="lib.dir" value="lib" />
 	<property name="class.dir" value="bin" />
 	<property name="jar.dir" value="dist" />
+	<property name="docs.dir" location="docs" />
 	<property name="jar.file" value="${jar.dir}/${ant.project.name}.jar" />
 
 	<path id="libraries.path">
@@ -27,6 +28,16 @@
 	<target name="clean" description="delete old files">
 		<delete dir="${class.dir}" />
 		<delete dir="${jar.dir}" />
+		<delete dir="${docs.dir}" />
+	</target>
+
+	<target name="docs" depends="compile">
+		<mkdir dir="${docs.dir}" />
+		<javadoc packagenames="src" sourcepath="${source.dir}" destdir="${docs.dir}">
+			<fileset dir="${source.dir}">
+				<include name="**" />
+			</fileset>
+		</javadoc>
 	</target>
 
 	<target name="compile" description="build class files" depends="clean">
@@ -36,7 +47,7 @@
 		</javac>
 	</target>
 
-	<target name="jar" depends="compile">
+	<target name="jar" depends="docs">
 		<mkdir dir="${jar.dir}" />
 		<mkdir dir="${class.dir}/${lib.dir}" />
 		<copy todir="${class.dir}/${lib.dir}" flatten="true">
