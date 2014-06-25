@@ -35,7 +35,6 @@ public class Jadis
      * Maked a Jadis object by building the connection via provided URL
      * 
      * @param name the server url
-     * @param memcacheSize the number of results that should be kept in an LRU cache in memory
      */
     private Jadis(String name)
     {
@@ -285,7 +284,7 @@ public class Jadis
     }
 
     /**
-     * Creates a thread, sets to min priority, runs it
+     * Creates a thread, runs it
      * @param r the runnable to execute
      */
     public void exec(Runnable r)
