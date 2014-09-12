@@ -1,10 +1,12 @@
 package com.tmathmeyer.jadis;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 
 import redis.clients.jedis.Jedis;
@@ -96,7 +98,7 @@ public class Jadis
                     }
                     catch (Exception ex)
                     {
-                        cbl.Log(ex);
+                        cbl.Log(ex, clazz);
                     }
                 }
                 executor.getMap(parsed);
@@ -130,7 +132,7 @@ public class Jadis
                 catch (Exception e)
                 {
                     lock.release();
-                    cbl.Log(e); 
+                    cbl.Log(e, clazz); 
                 }
             }
         });
@@ -156,12 +158,100 @@ public class Jadis
                     getBase().hset(mapName, elemKey, s);
                     lock.release();
                 } catch (Exception e) {
-                    cbl.Log(e);
+                    cbl.Log(e, insert.getClass());
                     lock.release();
                 }
             }
         });
     }
+    
+    
+    /**
+     * 
+     */
+    public <T> void addSet(final String setName, final T insert, final CallBackLogger<Exception> cbl)
+    {
+        exec(new Runnable(){
+
+            @Override
+            public void run()
+            {
+                String s = parser.toJson(insert);
+                while(!lock.tryAcquire());
+                try
+                {
+                    getBase().sadd(setName, s);
+                    lock.release();
+                } catch (Exception e) {
+                    cbl.Log(e, insert.getClass());
+                    lock.release();
+                }
+            }
+        });
+    }
+    
+    public <T> void remFSet(final String setName, final T delete, final CallBackLogger<Exception> cbl)
+    {
+        exec(new Runnable(){
+
+            @Override
+            public void run()
+            {
+                String s = parser.toJson(delete);
+                while(!lock.tryAcquire());
+                try
+                {
+                    getBase().srem(setName, s);
+                    lock.release();
+                } catch (Exception e) {
+                    cbl.Log(e, delete.getClass());
+                    lock.release();
+                }
+            }
+        });
+    }
+    
+    public <T> void getASet(final String setName, final Promise<T> executor, final Class<T> clazz, final CallBackLogger<Exception> cbl)
+    {
+        exec(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                while(!lock.tryAcquire());
+                try 
+                {
+                	getBase();
+                	Set<String> members = getBase().smembers(setName);
+                	Set<T> deserialized = new HashSet<T>();
+                	for(String s : members)
+                	{
+                		T t = parser.fromJson(s, clazz);
+                		deserialized.add(t);
+                	}
+                    executor.getSet(deserialized);
+                    lock.release();
+                }
+                catch (Exception e)
+                {
+                    lock.release();
+                    cbl.Log(e, clazz); 
+                }
+            }
+        });
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     /**
      * bulk deleter of items
@@ -185,7 +275,7 @@ public class Jadis
                 }
                 catch (Exception e)
                 {
-                    cbl.Log(e);
+                    cbl.Log(e, Object.class);
                     lock.release();
                 }
             }
@@ -289,8 +379,22 @@ public class Jadis
      */
     public void exec(Runnable r)
     {
-        Thread async = new Thread(r);
-        async.start();
+    	if (isAsync)
+        {
+    		Thread async = new Thread(r);
+        	async.start();
+        }
+    	else
+    	{
+    		r.run();
+    	}
+    }
+    
+    private boolean isAsync = true;
+    
+    public void setNonAsync()
+    {
+    	isAsync = false;
     }
 
     /**

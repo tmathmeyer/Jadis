@@ -36,7 +36,8 @@
 		<javadoc packagenames="src" sourcepath="${source.dir}" destdir="${docs.dir}">
 			<fileset dir="${source.dir}">
 				<include name="**" />
-			</fileset>
+            </fileset>
+            <classpath refid="libraries.path" />
 		</javadoc>
 	</target>
 
