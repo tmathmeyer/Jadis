@@ -152,9 +152,9 @@ public class Jadis
             @Override
             public void run()
             {
-                String s = parser.toJson(insert);
                 while(!lock.tryAcquire());
                 try {
+                	String s = parser.toJson(insert);
                     getBase().hset(mapName, elemKey, s);
                     lock.release();
                 } catch (Exception e) {
